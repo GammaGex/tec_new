@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>New Tab</title>
+    <style>
+        body {
+            background-color: #202124;
+            color: #e8eaed;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            font-weight: normal;
+            margin-bottom: 40px;
+            color: #fff;
+        }
+
+        .shortcuts {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .shortcut {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 112px;
+            height: 112px;
+            background-color: #35363a;
+            border-radius: 8px;
+            text-decoration: none;
+            color: inherit;
+            transition: background-color 0.2s, transform 0.1s;
+            cursor: pointer;
+        }
+
+        .shortcut:hover {
+            background-color: #45464a;
+            transform: translateY(-2px);
+        }
+
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: #202124;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .icon {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .label {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* Light Theme Support via Query Param or JS injection later */
+        @media (prefers-color-scheme: light) {
+             /* Can be handled by JS if we want to sync with main browser theme */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="shortcuts">
+
+        <a href="https://finviz.com/login-email?remember=true" class="shortcut">
+            <div class="icon-circle">
+                <svg class="icon" viewBox="0 0 24 24" style="color: #27ae60;"><path d="M6 4h12v2H8v4h8v2H8v8H6z"/></svg>
+            </div>
+            <span class="label">Finviz <span style="color: #ff0000;">TEST</span></span>
+        </a>
+
+        <a href="https://app.gammaedge.us/" class="shortcut">
+            <div class="icon-circle">
+                 <svg class="icon" viewBox="0 0 24 24" style="color: #1abc9c;"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+            </div>
+            <span class="label">GammaEdge</span>
+        </a>
+
+        <a href="https://gammagex.netlify.app/" class="shortcut">
+            <div class="icon-circle">
+                <svg class="icon" viewBox="0 0 24 24" style="color: #e74c3c;"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+            </div>
+            <span class="label">GammaGex</span>
+        </a>
+
+        <!-- Gexbot FLOW: marcador gex_profile=flw (não contém a palavra 'classic' para não interferir na lógica de alternância www<->app) -->
+        <a href="https://www.gexbot.com/?gex_profile=flw" class="shortcut">
+            <div class="icon-circle">
+                <svg class="icon" viewBox="0 0 24 24" style="color: #00bcd4;"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5z"/></svg>
+            </div>
+            <span class="label">Gexbot Flow</span>
+        </a>
+
+        <!-- Gexbot CLASSIC: marcador gex_profile=cls (não contém a palavra 'classic' para não interferir na lógica de alternância www<->app) -->
+        <a href="https://www.gexbot.com/?gex_profile=cls" class="shortcut">
+            <div class="icon-circle">
+                <svg class="icon" viewBox="0 0 24 24" style="color: #00bcd4;"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5A2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5z"/></svg>
+            </div>
+            <span class="label">Gexbot Classic</span>
+        </a>
+
+        <a href="https://menthorq.com/account/" class="shortcut">
+            <div class="icon-circle">
+                <svg class="icon" viewBox="0 0 24 24" style="color: #9b59b6;"><path d="M5 4h3l4 7 4-7h3v16h-3v-7l-4 7-4-7v7H5V4z"/></svg>
+            </div>
+            <span class="label">MenthorQ</span>
+        </a>
+
+        <a href="https://v3.quantdata.us/" class="shortcut">
+            <div class="icon-circle">
+                <svg class="icon" viewBox="0 0 24 24" style="color: #2ecc71;"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/><path d="M0 0h24v24H0z" fill="none"/></svg>
+            </div>
+            <span class="label">QuantData</span>
+        </a>
+
+        <a href="https://app.quantdata.us/" class="shortcut">
+            <div class="icon-circle">
+                <svg class="icon" viewBox="0 0 24 24" style="color: #2ecc71;"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/><path d="M0 0h24v24H0z" fill="none"/></svg>
+            </div>
+            <span class="label">QuantData Legacy</span>
+        </a>
+
+        <a href="https://dashboard.spotgamma.com/home?eh-model=legacy" class="shortcut">
+            <div class="icon-circle">
+                 <svg class="icon" viewBox="0 0 24 24" style="color: #f1c40f;"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+            </div>
+            <span class="label">SpotGamma</span>
+        </a>
+
+        <a href="http://gammalines.ddns.net:321/AUT/index01.php" class="shortcut">
+            <div class="icon-circle">
+                 <svg class="icon" viewBox="0 0 24 24" style="color: #e67e22;"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+            </div>
+            <span class="label">Token</span>
+        </a>
+
+        <a href="https://discord.com/channels/@me" class="shortcut">
+            <div class="icon-circle">
+                 <svg class="icon" viewBox="0 0 24 24" style="color: #5865F2;"><path d="M21,6H3A2,2 0 0,0 1,8V16A2,2 0 0,0 3,18H21A2,2 0 0,0 23,16V8A2,2 0 0,0 21,6M21,16H3V8H21V16M6,13H11V14H6V13M13,10H18V11H13V10M6,10H11V11H6V10M13,13H18V14H13V13Z"/></svg>
+            </div>
+            <span class="label">Discord</span>
+        </a>
+    </div>
+
+    <script>
+        // Check for theme in localStorage from parent? 
+        // Webview is isolated. But we can pass param via URL or just default to dark.
+        // For now, keeping it simple Dark Mode as requested default.
+        
+        // Handle clicks to navigate in the same frame (webview)
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                // Default behavior follows href, which navigates the webview
+            });
+        });
+    </script>
+</body>
+</html>

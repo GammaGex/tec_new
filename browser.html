@@ -1,0 +1,1826 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Gex Enterprise Browser</title>
+    <style>
+        :root {
+            --bg-frame: #202124;
+            --bg-toolbar: #35363a;
+            --tab-active: #323639;
+            --tab-inactive: #202124;
+            --tab-hover: #292a2d;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --input-bg: #202124;
+            --input-border: #5f6368;
+            --btn-hover: rgba(255, 255, 255, 0.1);
+            --accent-color: #8ab4f8;
+            --border-color: #3c4043;
+            --toolbar-height: 32px;
+            --tab-height: 38px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-frame);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        .icon {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .icon-sm {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        .icon-lg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        /* TITLE BAR */
+        #title-bar {
+            background: var(--bg-frame);
+            height: 38px;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            -webkit-app-region: drag;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #controls-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            -webkit-app-region: no-drag;
+            margin-left: 10px;
+        }
+
+        #tabs-container {
+            display: flex;
+            flex: 1;
+            overflow-x: auto;
+            align-items: center;
+            gap: 2px;
+            -webkit-app-region: no-drag;
+            scrollbar-width: none;
+        }
+
+        .tab {
+            background: var(--tab-inactive);
+            color: var(--text-secondary);
+            min-width: 120px;
+            max-width: 200px;
+            height: 30px;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 12px;
+            cursor: grab;
+            flex: 1;
+            user-select: none;
+            transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .tab.dragging {
+            opacity: 0.7;
+            cursor: grabbing;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+        }
+
+        .tab.drag-over-left {
+            box-shadow: inset 3px 0 0 var(--accent-color);
+        }
+
+        .tab.drag-over-right {
+            box-shadow: inset -3px 0 0 var(--accent-color);
+        }
+
+        .tab.active {
+            background: var(--tab-active);
+            color: var(--text-primary);
+            z-index: 10;
+            height: 34px;
+            margin-top: -4px;
+            box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-title {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tab-controls {
+            display: flex;
+            align-items: center;
+            margin-left: 5px;
+        }
+
+        .tab-btn {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 2px;
+            transition: all 0.2s;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .tab-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            color: var(--text-primary);
+        }
+
+        .tab-btn.close:hover {
+            background: #d93025;
+            color: white;
+        }
+
+        .tab-btn.detach:hover {
+            background-color: #1a73e8;
+            color: white;
+        }
+
+        .tab-btn.split-toggle.selected {
+            background-color: var(--accent-color);
+            color: #fff;
+        }
+
+        .tab-btn.focus-toggle.selected {
+            background-color: #34a853;
+            color: #fff;
+        }
+
+        .tab-btn.focus-toggle:hover {
+            background-color: #34a853;
+            color: white;
+        }
+
+        #new-tab-btn {
+            width: 32px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            -webkit-app-region: no-drag;
+            margin-left: 2px;
+        }
+
+        #new-tab-btn:hover {
+            background: var(--btn-hover);
+            color: var(--text-primary);
+        }
+
+        /* TOOLBAR - OCULTADO */
+        #toolbar {
+            display: none;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-btn:hover {
+            background: var(--btn-hover);
+            color: var(--text-primary);
+        }
+
+        .nav-btn.active {
+            background-color: rgba(138, 180, 248, 0.2);
+            color: var(--accent-color);
+        }
+
+        .ctrl-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ctrl-btn:hover {
+            background: var(--btn-hover);
+            color: var(--text-primary);
+        }
+
+        #url-bar-container {
+            flex: 1;
+            background: var(--input-bg);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            height: 32px;
+        }
+
+        #url-input {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            width: 100%;
+            height: 100%;
+            outline: none;
+            font-size: 14px;
+        }
+
+        #zoom-widget {
+            display: flex;
+            align-items: center;
+            background: var(--input-bg);
+            border-radius: 18px;
+            padding: 0 4px;
+            height: 30px;
+            margin-right: 5px;
+        }
+
+        #zoom-level {
+            font-size: 12px;
+            padding: 0 8px;
+            min-width: 40px;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* LAYOUT & WEBVIEWS */
+        #layout-modal {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            background: var(--bg-frame);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            width: 160px;
+            z-index: 200;
+        }
+
+        .layout-option {
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .layout-option:hover {
+            background: var(--tab-hover);
+        }
+
+        #webviews-container {
+            flex: 1;
+            position: relative;
+            background: var(--bg-frame);
+        }
+
+        webview {
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        webview.active {
+            display: flex;
+        }
+
+        #webviews-container.layout-split {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        #webviews-container.layout-split webview {
+            display: none;
+        }
+
+        #webviews-container.layout-split webview.in-split {
+            display: flex !important;
+            flex: 1;
+            height: 100% !important;
+            border-right: 2px solid var(--bg-frame);
+        }
+
+        #webviews-container.layout-split.cols-2,
+        #webviews-container.layout-split.cols-3,
+        #webviews-container.layout-split.cols-4 {
+            flex-wrap: nowrap !important;
+        }
+
+        .resizer {
+            background: var(--bg-frame);
+            z-index: 99;
+            width: 8px;
+            cursor: col-resize;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .resizer:hover {
+            background: var(--accent-color);
+        }
+
+        #webview-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9998;
+            display: none;
+            background: transparent;
+        }
+
+        #auth-blocked-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        #auth-blocked-box {
+            background: var(--bg-toolbar);
+            color: var(--text-primary);
+            padding: 28px 32px;
+            border-radius: 10px;
+            max-width: 520px;
+            text-align: center;
+            font-size: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        #auth-blocked-actions {
+            margin-top: 16px;
+            display: flex;
+            justify-content: center;
+        }
+
+        #auth-blocked-ok {
+            background: var(--accent-color);
+            color: #fff;
+            border: 0;
+            padding: 8px 22px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        #auth-blocked-ok:hover {
+            filter: brightness(0.95);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="title-bar">
+        <div id="tabs-container"></div>
+
+        <!-- Controles à direita -->
+        <div id="controls-container">
+            <button class="nav-btn" id="btn-back" onclick="goBack()" title="Back"><svg class="icon-sm"
+                    viewBox="0 0 24 24">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+                </svg></button>
+            <button class="nav-btn" id="btn-forward" onclick="goForward()" title="Forward"><svg class="icon-sm"
+                    viewBox="0 0 24 24">
+                    <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
+                </svg></button>
+            <button class="nav-btn" onclick="reload()" title="Reload"><svg class="icon-sm" viewBox="0 0 24 24">
+                    <path
+                        d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                </svg></button>
+            <button class="nav-btn" onclick="goHome()" title="Home"><svg class="icon-sm" viewBox="0 0 24 24">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                </svg></button>
+
+            <div id="zoom-widget">
+                <button class="ctrl-btn" onclick="changeZoom(-1)" title="Zoom Out"><svg class="icon-sm"
+                        viewBox="0 0 24 24">
+                        <path d="M19 13H5v-2h14v2z" />
+                    </svg></button>
+                <span id="zoom-level" onclick="resetZoom()" title="Reset to 100%">100%</span>
+                <button class="ctrl-btn" onclick="changeZoom(1)" title="Zoom In"><svg class="icon-sm"
+                        viewBox="0 0 24 24">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                    </svg></button>
+            </div>
+
+            <button class="ctrl-btn" onclick="organizeWindows()" title="Arrange Windows"><svg class="icon-sm"
+                    viewBox="0 0 24 24">
+                    <path d="M2 5h9v14H2zm11 0h9v14h-9z" />
+                </svg></button>
+            <button class="ctrl-btn" id="btn-layout" onclick="toggleLayoutModal()" title="Split View"><svg
+                    class="icon-sm" viewBox="0 0 24 24">
+                    <path
+                        d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z" />
+                </svg></button>
+        </div>
+    </div>
+
+    <div id="toolbar">
+        <button class="nav-btn" id="btn-back" onclick="goBack()" title="Back"><svg class="icon-lg" viewBox="0 0 24 24">
+                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+            </svg></button>
+        <button class="nav-btn" id="btn-forward" onclick="goForward()" title="Forward"><svg class="icon-lg"
+                viewBox="0 0 24 24">
+                <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
+            </svg></button>
+        <button class="nav-btn" onclick="reload()" title="Reload"><svg class="icon-sm" viewBox="0 0 24 24">
+                <path
+                    d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+            </svg></button>
+        <button class="nav-btn" onclick="goHome()" title="Home"><svg class="icon-sm" viewBox="0 0 24 24">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg></button>
+
+        <div id="url-bar-container" style="display: none;">
+            <svg class="icon-sm" viewBox="0 0 24 24" style="color: var(--accent-color); margin-right: 8px;">
+                <path
+                    d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3 3.1-3s3.1 1.29 3.1 3v2z" />
+            </svg>
+            <input type="text" id="url-input" placeholder="Enter a URL..." onkeypress="handleUrlKey(event)">
+        </div>
+
+        <div id="zoom-widget">
+            <button class="ctrl-btn" onclick="changeZoom(-1)" title="Zoom Out"><svg class="icon-sm" viewBox="0 0 24 24">
+                    <path d="M19 13H5v-2h14v2z" />
+                </svg></button>
+            <span id="zoom-level" onclick="resetZoom()" title="Reset to 100%">100%</span>
+            <button class="ctrl-btn" onclick="changeZoom(1)" title="Zoom In"><svg class="icon-sm" viewBox="0 0 24 24">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                </svg></button>
+        </div>
+
+        <button class="ctrl-btn" onclick="organizeWindows()" title="Arrange Windows Side by Side">
+            <svg class="icon-lg" viewBox="0 0 24 24">
+                <path d="M2 5h9v14H2zm11 0h9v14h-9z" />
+            </svg>
+        </button>
+
+        <button class="ctrl-btn" id="btn-layout" onclick="toggleLayoutModal()" title="Split View">
+            <svg class="icon-lg" viewBox="0 0 24 24">
+                <path
+                    d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z" />
+            </svg>
+        </button>
+
+    </div>
+
+    <div id="layout-modal">
+        <div class="layout-option" onclick="applyLayoutPreset('single')"><svg class="icon-sm" viewBox="0 0 24 24">
+                <path d="M4 4h16v16H4z" />
+            </svg> Default (1)</div>
+        <div class="layout-option" onclick="applyLayoutPreset('split-row')"><svg class="icon-sm" viewBox="0 0 24 24">
+                <path d="M4 4h7v16H4zm9 0h7v16h-7z" />
+            </svg> 2 Columns</div>
+        <div class="layout-option" onclick="applyLayoutPreset('split-row-3')"><svg class="icon-sm" viewBox="0 0 24 24">
+                <path d="M4 4h5v16H4zm5.5 0h5v16h-5zm5.5 0h5v16h-5z" />
+            </svg> 3 Columns</div>
+        <div class="layout-option" onclick="applyLayoutPreset('split-row-4')"><svg class="icon-sm" viewBox="0 0 24 24">
+                <path d="M4 4h3v16H4zm4 0h3v16H8zm4 0h3v16h-3zm4 0h3v16h-3z" />
+            </svg> 4 Columns</div>
+    </div>
+
+    <div id="webviews-container"></div>
+    <div id="webview-overlay"></div>
+
+    <script>
+        let tabs = []; let activeTabId = null; let tabCounter = 0; let autoLoginScript = ""; let isSplitLayout = false; let remoteConfig = null; let isResizing = false; let currentResizerLeftEl = null; let startX = 0; let startWidth = 0; let initTs = Date.now(); let gexbotCount = 0;
+        const GEXBOT_LIMIT = 2;
+        let currentLayoutMode = 'single';
+        let focusedTabId = null; // Aba atualmente em foco (maximizada temporariamente)
+
+        const ZOOM_LEVELS = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0];
+        const tabsContainer = document.getElementById('tabs-container');
+        const webviewsContainer = document.getElementById('webviews-container');
+        const urlInput = document.getElementById('url-input');
+        const zoomLabel = document.getElementById('zoom-level');
+        const layoutModal = document.getElementById('layout-modal');
+        const btnLayout = document.getElementById('btn-layout');
+        const plusBtn = document.createElement('div'); plusBtn.id = 'new-tab-btn'; plusBtn.title = 'New Tab';
+        plusBtn.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+
+        const SESSION_KEY = 'gex_session_tabs';
+        let sessionSaveTimer = null;
+
+        function isValidSessionUrl(u) {
+            if (!u || typeof u !== 'string') return false;
+            const lower = u.toLowerCase().trim();
+            if (lower === '') return false;
+            if (lower === 'about:blank') return false;
+            if (lower.includes('/browser.html')) return false;
+            return true;
+        }
+
+        function getTabUrl(t) {
+            let u = '';
+            try { if (t.webview && t.webview.getURL) u = t.webview.getURL(); } catch { }
+            if (!u || u === 'about:blank') u = t.url;
+            if ((!u || u === 'about:blank') && t.webview) u = t.webview.src;
+            return u || '';
+        }
+
+        function normalizeSessionEntry(entry) {
+            if (!entry) return null;
+            if (typeof entry === 'string') return { url: entry };
+            if (typeof entry === 'object' && typeof entry.url === 'string') {
+                return { url: entry.url, scrollX: Number(entry.scrollX) || 0, scrollY: Number(entry.scrollY) || 0 };
+            }
+            return null;
+        }
+
+        function saveSessionTabs() {
+            try {
+                if (sessionSaveTimer) clearTimeout(sessionSaveTimer);
+                sessionSaveTimer = setTimeout(() => {
+                    try {
+                        const items = tabs.map(t => {
+                            const url = getTabUrl(t);
+                            if (!isValidSessionUrl(url)) return null;
+                            const scrollX = typeof t.scrollX === 'number' ? t.scrollX : 0;
+                            const scrollY = typeof t.scrollY === 'number' ? t.scrollY : 0;
+                            return { url, scrollX, scrollY };
+                        }).filter(Boolean);
+                        localStorage.setItem(SESSION_KEY, JSON.stringify(items));
+                    } catch { }
+                }, 400);
+            } catch { }
+        }
+
+        function loadSessionTabs() {
+            try {
+                const raw = localStorage.getItem(SESSION_KEY);
+                if (!raw) return [];
+                const arr = JSON.parse(raw);
+                if (!Array.isArray(arr)) return [];
+                return arr.map(normalizeSessionEntry).filter(e => e && isValidSessionUrl(e.url));
+            } catch { return []; }
+        }
+
+        function normalizeScrollUrl(u) {
+            try {
+                const parsed = new URL(u);
+                parsed.hash = '';
+                return parsed.toString();
+            } catch {
+                return String(u || '').split('#')[0];
+            }
+        }
+
+        function applyPendingScroll(tab, webview) {
+            if (!tab || !tab.pendingScroll) return;
+            const currentUrl = getTabUrl(tab);
+            const targetUrl = tab.pendingScroll.url || currentUrl;
+            const cur = normalizeScrollUrl(currentUrl);
+            const tgt = normalizeScrollUrl(targetUrl);
+            if (tgt && cur && cur !== tgt && !cur.startsWith(tgt) && !tgt.startsWith(cur)) return;
+            const x = Math.max(0, Number(tab.pendingScroll.x) || 0);
+            const y = Math.max(0, Number(tab.pendingScroll.y) || 0);
+            tab.pendingScroll = null;
+            setTimeout(() => {
+                try { webview.executeJavaScript(`(function(){ try{ window.scrollTo(${x}, ${y}); }catch(e){} })();`); } catch { }
+            }, 200);
+        }
+
+        function normalizeGexbotUrl(u) {
+            try {
+                const parsed = new URL(u);
+                if (parsed.hostname.includes('gexbot.com')) {
+                    const base = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+                    return base + 'newtab.html';
+                }
+            } catch { }
+            return u;
+        }
+
+        function isGexbotUrl(u) {
+            if (!u || typeof u !== 'string') return false;
+            try {
+                const h = new URL(u).hostname.toLowerCase();
+                return h.includes('gexbot.com');
+            } catch {
+                return String(u || '').toLowerCase().includes('gexbot.com');
+            }
+        }
+
+        function countLocalGexbotTabs() {
+            let c = 0;
+            for (const t of tabs) {
+                const u = getTabUrl(t);
+                if (isGexbotUrl(u)) c++;
+            }
+            return c;
+        }
+
+        function getGexbotTotalCount() {
+            const local = countLocalGexbotTabs();
+            return Math.max(gexbotCount, local);
+        }
+
+        function canOpenGexbot(targetUrl, currentUrl, isNewTab) {
+            if (!isGexbotUrl(targetUrl)) return true;
+            const total = getGexbotTotalCount();
+            if (isNewTab) return total < GEXBOT_LIMIT;
+            if (isGexbotUrl(currentUrl)) return true;
+            return total < GEXBOT_LIMIT;
+        }
+
+        // --- MODO AUXILIAR (JANELAS DESTACADAS/SECUNDÁRIAS) ---
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('isAux') === '1') {
+            const toolbar = document.getElementById('toolbar');
+            const titleBar = document.getElementById('title-bar');
+            const zoomWidget = document.getElementById('zoom-widget');
+
+            const style = document.createElement('style');
+            style.innerHTML = `
+                #new-tab-btn { display: none !important; }
+                .tab-btn.split-toggle, .tab-btn.detach { display: none !important; }
+                .tab-title { padding-right: 5px; }
+                #zoom-widget { transition: opacity 0.5s ease; opacity: 1; }
+                #zoom-widget.hidden { opacity: 0; pointer-events: none; }
+            `;
+            document.head.appendChild(style);
+
+            if (zoomWidget) {
+                document.body.appendChild(zoomWidget);
+                zoomWidget.style.position = 'fixed';
+                zoomWidget.style.top = '10px';
+                zoomWidget.style.right = '20px';
+                zoomWidget.style.zIndex = '9999';
+                zoomWidget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.5)';
+                zoomWidget.style.backgroundColor = 'var(--bg-toolbar)';
+                zoomWidget.style.border = '1px solid var(--border-color)';
+                zoomWidget.style.borderRadius = '18px';
+                zoomWidget.style.transform = 'scale(0.8)'; // Menor
+
+                // Auto-hide logic
+                let hideTimeout;
+                const resetHideTimer = () => {
+                    zoomWidget.classList.remove('hidden');
+                    clearTimeout(hideTimeout);
+                    hideTimeout = setTimeout(() => {
+                        zoomWidget.classList.add('hidden');
+                    }, 4000);
+                };
+
+                // Show on mouse move anywhere in window
+                document.addEventListener('mousemove', resetHideTimer);
+                // Also show when interacting with widget
+                zoomWidget.addEventListener('mouseenter', () => {
+                    clearTimeout(hideTimeout);
+                    zoomWidget.classList.remove('hidden');
+                });
+                zoomWidget.addEventListener('mouseleave', resetHideTimer);
+
+                resetHideTimer(); // Start timer
+            }
+
+            if (toolbar) toolbar.style.display = 'none';
+            if (titleBar) titleBar.style.display = 'none';
+        }
+
+        // === TAB LOGIC ===
+        const getNewTabUrl = () => { const base = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1); return base + 'newtab.html'; };
+        plusBtn.onclick = () => createNewTab(getNewTabUrl());
+
+        function computeSplitState() {
+            const ids = []; const widths = [];
+            const cw = webviewsContainer.clientWidth || 0;
+            tabs.forEach((t, idx) => {
+                if (t.isInSplit) {
+                    ids.push(idx);
+                    let w = 0;
+                    try { w = t.webview.getBoundingClientRect().width; } catch { }
+                    widths.push(cw ? Math.round((w / cw) * 10000) / 100 : null);
+                }
+            });
+            if (ids.length === 0) return null;
+            return { mode: currentLayoutMode === 'single' ? 'split-row' : currentLayoutMode, ids, widths };
+        }
+        function notifyMainProcess() {
+            if (!window.api || !window.api.updateWindowState) return;
+            const urlsByIndex = [];
+            for (let i = 0; i < tabs.length; i++) {
+                let u = '';
+                try { if (tabs[i].webview && tabs[i].webview.getURL) u = tabs[i].webview.getURL(); } catch { }
+                if (!u || u === 'about:blank') u = tabs[i].url;
+                if ((!u || u === 'about:blank') && tabs[i].webview) u = tabs[i].webview.src;
+                // CORREÇÃO: Enviar about:blank em vez de string vazia para evitar filtragem no main.js
+                urlsByIndex[i] = u || 'about:blank';
+            }
+            const split = computeSplitState();
+            try { console.log('notifyMainProcess tabsByIndex', urlsByIndex, 'split', split); } catch { }
+            window.api.updateWindowState({ tabs: urlsByIndex, layoutMode: currentLayoutMode, splitState: split, source: 'notify', allTabs: urlsByIndex });
+        }
+
+        function createNewTab(url, restoreState) {
+            // Seletor de perfil do Gexbot (FLOW vs CLASSIC)
+            // IMPORTANTE: não usamos "gexflow://" pois o Windows tenta abrir como protocolo externo.
+            // Usamos query param "gex_profile=flw|cls" apenas para marcar a aba na criação, e depois carregamos a URL limpa.
+            let gexProfile = null; // 'flow' | 'classic' | null
+            let realUrl = url;
+            try {
+                const raw = String(url || '');
+                // Marker via query param
+                const u = new URL(raw, window.location.href);
+                const gp = (u.searchParams.get('gex_profile') || '').toLowerCase();
+                if (gp === 'cls' || gp === 'classic') gexProfile = 'classic';
+                if (gp === 'flw' || gp === 'flow') gexProfile = 'flow';
+
+                // Para Gexbot, carregamos a URL base (sem o marcador) para não interferir na alternância www<->app.
+                const host = String(u.hostname || '').toLowerCase();
+                if (host.endsWith('gexbot.com') && gexProfile) {
+                    realUrl = 'https://www.gexbot.com/';
+                }
+            } catch { }
+
+            if (isGexbotUrl(realUrl) && !canOpenGexbot(realUrl, null, true)) {
+                showAuthBlocked('Limite de 2 janelas Gexbot atingido.', true);
+                return;
+            }
+            tabCounter++; const tabId = `tab-${tabCounter}`;
+            const webview = document.createElement('webview');
+
+            // Partition separada p/ CLASSIC para não misturar cookies com o FLOW
+            const partition = (gexProfile === 'classic') ? 'persist:gex-classic' : 'persist:gex';
+            webview.src = realUrl;
+            webview.setAttribute('partition', partition);
+            webview.setAttribute('plugins', 'true');
+            webview.setAttribute('allowpopups', 'true');
+            webview.id = `view-${tabId}`;
+
+            // ATTACH PRELOAD for isolated zoom
+            const preloadUrl = window.location.href.replace('browser.html', 'webview-preload.js').split('?')[0];
+            webview.setAttribute('preload', preloadUrl);
+
+            // ZOOM INHERITANCE LOGIC
+            let initialZoomIndex = 7; // 100%
+            const urlParams = new URLSearchParams(window.location.search);
+            const isAux = urlParams.get('isAux') === '1';
+
+            if (isAux && tabs.length > 0) {
+                // Inherit from first tab (since all should be same in aux)
+                initialZoomIndex = tabs[0].zoomIndex;
+            }
+
+            const tabEl = document.createElement('div'); tabEl.className = 'tab'; tabEl.id = tabId;
+            tabEl.onclick = (e) => { if (!e.target.closest('.tab-btn')) switchTab(tabId); };
+
+            tabEl.innerHTML = `
+                <div class="tab-icon"><svg class="icon-sm" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></div>
+                <div class="tab-title">Loading...</div>
+                <div class="tab-controls">
+                    <div class="tab-btn focus-toggle" onclick="toggleFocusTab('${tabId}', event)" title="Maximize"><svg class="icon-sm" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg></div>
+                    <div class="tab-btn detach" onclick="detachTab('${tabId}', event)" title="Detach"><svg class="icon-sm" viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg></div>
+                    <div class="tab-btn close" onclick="closeTab('${tabId}', event)" title="Close"><svg class="icon-sm" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 17.59 13.41 12z"/></svg></div>
+                </div>`;
+
+            // Drag and Drop para reorganizar abas
+            tabEl.draggable = true;
+            tabEl.addEventListener('dragstart', (e) => handleTabDragStart(e, tabId));
+            tabEl.addEventListener('dragend', (e) => handleTabDragEnd(e, tabId));
+            tabEl.addEventListener('dragover', (e) => handleTabDragOver(e, tabId));
+            tabEl.addEventListener('dragleave', (e) => handleTabDragLeave(e, tabId));
+            tabEl.addEventListener('drop', (e) => handleTabDrop(e, tabId));
+
+            const scrollX = restoreState && typeof restoreState.scrollX === 'number' ? restoreState.scrollX : 0;
+            const scrollY = restoreState && typeof restoreState.scrollY === 'number' ? restoreState.scrollY : 0;
+            const scrollUrl = restoreState && typeof restoreState.url === 'string' ? restoreState.url : realUrl;
+            const hasScroll = restoreState && (typeof restoreState.scrollX === 'number' || typeof restoreState.scrollY === 'number');
+            tabs.push({ id: tabId, title: 'New Tab', url: realUrl, webview: webview, el: tabEl, zoomIndex: initialZoomIndex, isInSplit: false, createdAt: Date.now(), scrollX, scrollY, lastScrollUrl: scrollUrl, pendingScroll: hasScroll ? { x: scrollX, y: scrollY, url: scrollUrl } : null, gexProfile });
+            if (currentLayoutMode !== 'single') {
+                isSplitLayout = true;
+                const desiredCount = currentLayoutMode === 'split-row-3' ? 3 : (currentLayoutMode === 'split-row-4' ? 4 : 2);
+                let selCount = tabs.filter(t => t.isInSplit).length;
+                if (selCount === 0 && tabs.length > 1) {
+                    tabs[0].isInSplit = true;
+                    selCount = 1;
+                }
+                if (selCount < desiredCount) {
+                    const nt = tabs[tabs.length - 1];
+                    if (nt) nt.isInSplit = true;
+                }
+            }
+            webviewsContainer.appendChild(webview);
+            if (!tabsContainer.contains(plusBtn)) { tabsContainer.appendChild(tabEl); tabsContainer.appendChild(plusBtn); } else { tabsContainer.insertBefore(tabEl, plusBtn); }
+
+            // APPLY ZOOM
+            if (isAux) {
+                // Defer slightly to ensure webview is ready
+                setTimeout(() => {
+                    try { webview.send('set-zoom', ZOOM_LEVELS[initialZoomIndex]); } catch { }
+                }, 100);
+            }
+
+            setupWebviewEvents(webview, tabId); switchTab(tabId); updateSplitLayout(); notifyMainProcess(); saveSessionTabs();
+            setTimeout(() => {
+                try {
+                    if (window.api && window.api.updateWindowState) {
+                        const laterTabs = tabs.map(t => {
+                            let u = '';
+                            try { if (t.webview && t.webview.getURL) u = t.webview.getURL(); } catch { }
+                            if (!u || u === 'about:blank') { try { if (t.webview && t.webview.src) u = t.webview.src; } catch { } }
+                            if (!u && t.url) u = t.url;
+                            return u || '';
+                        });
+                        window.api.updateWindowState({ tabs: laterTabs, layoutMode: currentLayoutMode, splitState: computeSplitState(), source: 'create-new-tab-later' });
+                    }
+                } catch { }
+            }, 500);
+        }
+
+        function switchTab(tabId) {
+            const tab = tabs.find(t => t.id === tabId);
+            if (!tab) return;
+
+            // Se estamos em modo split
+            if (isSplitLayout) {
+                if (tab.isInSplit) {
+                    // Clicou em uma aba que está no split -> sair do modo foco e voltar ao split
+                    if (focusedTabId !== null) {
+                        focusedTabId = null;
+                        console.log('[Split] Voltando ao modo split');
+                        updateSplitLayout();
+                    }
+                } else {
+                    // Clicou em uma aba que NÃO está no split -> abrir em tela cheia (modo foco)
+                    focusedTabId = tabId;
+                    console.log('[Split] Abrindo aba em tela cheia:', tabId);
+                    updateSplitLayout();
+                }
+            }
+
+            activeTabId = tabId;
+            tabs.forEach(t => {
+                t.el.classList.toggle('active', t.id === tabId);
+                t.webview.classList.toggle('active', t.id === tabId);
+                t.webview.classList.toggle('split-focused', t.id === tabId);
+            });
+
+            try { updateUrlBar(tab.webview.getURL()); } catch { updateUrlBar(tab.url || ''); }
+            try { updateNavButtons(tab.webview); } catch { }
+
+            // CORREÇÃO: Restaurar zoom salvo da aba (evita interferência visual entre abas do mesmo domínio)
+            if (tab.webview && typeof tab.zoomIndex === 'number') {
+                const z = ZOOM_LEVELS[tab.zoomIndex] || 1.0;
+                try { tab.webview.send('set-zoom', z); } catch (e) { }
+                updateZoomUI(tab.webview, z);
+            } else {
+                updateZoomUI(tab.webview);
+            }
+
+            document.title = tab.title || "Gex Enterprise Browser";
+        }
+
+        function closeTab(tabId, event) {
+            if (event) event.stopPropagation(); const index = tabs.findIndex(t => t.id === tabId); if (index === -1) return;
+            const tab = tabs[index]; tab.el.remove(); tab.webview.remove(); tabs.splice(index, 1);
+            if (activeTabId === tabId) { if (tabs.length > 0) switchTab(tabs[Math.min(index, tabs.length - 1)].id); else createNewTab(getNewTabUrl()); }
+            updateSplitLayout(); notifyMainProcess(); saveSessionTabs();
+        }
+
+        function detachTab(tabId, event) {
+            if (event) event.stopPropagation(); const tab = tabs.find(t => t.id === tabId);
+            if (tab) { window.api.detachTab(tab.webview.getURL() || tab.url); closeTab(tabId); }
+        }
+
+        function toggleTabSplit(tabId, event) {
+            if (event) event.stopPropagation();
+
+            // MODO VIVALDI: "Grade" icon agora destaca a aba e organiza janelas
+            if (window.api && window.api.detachTab && window.api.organizeWindows) {
+                const tab = tabs.find(t => t.id === tabId);
+                if (tab) {
+                    const url = (tab.webview && tab.webview.getURL && tab.webview.getURL()) || tab.url;
+                    // Se for a única aba, precisamos garantir que a janela não feche ou fique vazia estranha
+                    // closeTab já cria uma nova aba se for a última, então está ok.
+
+                    window.api.detachTab(url);
+                    closeTab(tabId);
+
+                    // Organiza após um delay curto
+                    setTimeout(() => {
+                        window.api.organizeWindows();
+                    }, 1000);
+                }
+                return;
+            }
+
+            const tab = tabs.find(t => t.id === tabId);
+            if (tab) {
+                tab.isInSplit = !tab.isInSplit;
+                if (currentLayoutMode === 'single') currentLayoutMode = 'split-row';
+                if (!isSplitLayout) {
+                    isSplitLayout = true;
+                    if (btnLayout) btnLayout.classList.add('active');
+                }
+                const selected = tabs.filter(t => t.isInSplit);
+                if (selected.length === 0) {
+                    isSplitLayout = false;
+                    currentLayoutMode = 'single';
+                    if (btnLayout) btnLayout.classList.remove('active');
+                }
+                updateSplitLayout();
+            }
+        }
+
+        function toggleFocusTab(tabId, event) {
+            if (event) { event.stopPropagation(); event.preventDefault(); }
+
+            // Se já está focado nesta aba, desfoca (volta ao grid)
+            if (focusedTabId === tabId) {
+                focusedTabId = null;
+                console.log('[Split] Saindo do modo foco, voltando ao grid');
+            } else {
+                // Foca nesta aba
+                focusedTabId = tabId;
+                switchTab(tabId);
+                console.log('[Split] Entrando no modo foco para:', tabId);
+            }
+
+            updateSplitLayout();
+        }
+
+        function applySplitContainerClass() {
+            if (!isSplitLayout) { webviewsContainer.className = ''; return; }
+            webviewsContainer.className = 'layout-split';
+            if (currentLayoutMode === 'split-row-3') webviewsContainer.classList.add('cols-3');
+            else if (currentLayoutMode === 'split-row-4') webviewsContainer.classList.add('cols-4');
+            else webviewsContainer.classList.add('cols-2');
+        }
+
+        function updateSplitLayout() {
+            document.querySelectorAll('.resizer').forEach(el => el.remove());
+            let selectedTabs = tabs.filter(t => t.isInSplit);
+            if (selectedTabs.length > 0 && !isSplitLayout) {
+                isSplitLayout = true;
+                if (currentLayoutMode === 'single') currentLayoutMode = 'split-row';
+                if (btnLayout) btnLayout.classList.add('active');
+            }
+
+            // MODO FOCO: Se uma aba está focada, só ela é visível
+            const isFocusMode = focusedTabId !== null && tabs.find(t => t.id === focusedTabId);
+
+            if (isFocusMode) {
+                // Modo foco - apenas uma aba visível
+                webviewsContainer.className = ''; // Remover classes de split
+                webviewsContainer.removeAttribute('data-count');
+
+                tabs.forEach(t => {
+                    t.webview.style.width = '';
+                    t.webview.style.flex = '';
+                    t.webview.classList.remove('in-split');
+
+                    // Só a aba focada fica ativa/visível
+                    if (t.id === focusedTabId) {
+                        t.webview.classList.add('active');
+                    } else {
+                        t.webview.classList.remove('active');
+                    }
+
+                    // Atualizar botão de foco
+                    const focusBtn = t.el.querySelector('.focus-toggle');
+                    if (focusBtn) {
+                        if (t.id === focusedTabId) {
+                            focusBtn.classList.add('selected');
+                            focusBtn.title = 'Back to Grid';
+                        } else {
+                            focusBtn.classList.remove('selected');
+                            focusBtn.title = 'Maximize';
+                        }
+                    }
+                });
+            } else {
+                // Modo split normal
+                webviewsContainer.setAttribute('data-count', isSplitLayout ? selectedTabs.length : 0);
+                applySplitContainerClass();
+
+                tabs.forEach(t => {
+                    if (!t.isInSplit) {
+                        t.webview.style.width = '';
+                        t.webview.style.flex = '';
+                    }
+                });
+
+                let visibleWebviews = [];
+                tabs.forEach(t => {
+                    const btn = t.el.querySelector('.split-toggle');
+                    if (btn) t.isInSplit ? btn.classList.add('selected') : btn.classList.remove('selected');
+
+                    // Atualizar botão de foco
+                    const focusBtn = t.el.querySelector('.focus-toggle');
+                    if (focusBtn) {
+                        focusBtn.classList.remove('selected');
+                        focusBtn.title = 'Maximize';
+                    }
+
+                    if (t.isInSplit && isSplitLayout) {
+                        t.webview.classList.add('in-split');
+                        visibleWebviews.push(t.webview);
+                    } else {
+                        t.webview.classList.remove('in-split');
+                    }
+                });
+
+                if (isSplitLayout && visibleWebviews.length > 1) {
+                    for (let i = 0; i < visibleWebviews.length - 1; i++) {
+                        const currentWebview = visibleWebviews[i];
+                        const resizer = document.createElement('div');
+                        resizer.className = 'resizer';
+                        resizer.addEventListener('mousedown', (e) => initResize(e, currentWebview));
+                        if (currentWebview.nextSibling) webviewsContainer.insertBefore(resizer, currentWebview.nextSibling);
+                        else webviewsContainer.appendChild(resizer);
+                    }
+                }
+            }
+
+            notifyMainProcess();
+        }
+        function toggleLayoutModal() { layoutModal.style.display = layoutModal.style.display === 'block' ? 'none' : 'block'; }
+
+        function applyLayoutPreset(type) {
+            layoutModal.style.display = 'none';
+
+            // SPLIT VIEW INTERNO (estilo Vivaldi) - divide a tela dentro da mesma janela
+            currentLayoutMode = type;
+            tabs.forEach(t => t.isInSplit = false);
+
+            if (type === 'single') {
+                isSplitLayout = false;
+                applySplitContainerClass();
+                if (btnLayout) btnLayout.classList.remove('active');
+                updateSplitLayout();
+                return;
+            }
+
+            // Determinar quantas abas precisamos no split
+            const needed = type === 'split-row-3' ? 3 : (type === 'split-row-4' ? 4 : 2);
+
+            // Criar abas adicionais se não tivermos o suficiente
+            while (tabs.length < needed) createNewTab(getNewTabUrl());
+
+            // Marcar as primeiras N abas como "in split"
+            for (let i = 0; i < needed; i++) {
+                if (tabs[i]) tabs[i].isInSplit = true;
+            }
+
+            isSplitLayout = true;
+            applySplitContainerClass();
+            if (btnLayout) btnLayout.classList.add('active');
+            updateSplitLayout();
+
+            // Salvar sessão imediatamente
+            saveSessionTabs();
+
+            // Delay adicional para garantir que as URLs estejam prontas
+            setTimeout(() => {
+                notifyMainProcess();
+                saveSessionTabs();
+            }, 500);
+
+            console.log(`[Split] Layout ${type} applied with ${needed} panels`);
+        }
+        function initResize(e, left) { e.preventDefault(); isResizing = true; currentResizerLeftEl = left; startX = e.clientX; startWidth = left.getBoundingClientRect().width; document.getElementById('webview-overlay').style.display = 'block'; document.addEventListener('mousemove', doResize); document.addEventListener('mouseup', stopResize); }
+        function doResize(e) { if (!isResizing) return; const pct = ((startWidth + (e.clientX - startX)) / webviewsContainer.clientWidth) * 100; if (pct > 5 && pct < 95) { currentResizerLeftEl.style.flex = 'none'; currentResizerLeftEl.style.width = pct + '%'; } }
+        function stopResize() { isResizing = false; document.getElementById('webview-overlay').style.display = 'none'; document.removeEventListener('mousemove', doResize); document.removeEventListener('mouseup', stopResize); }
+
+        function setupWebviewEvents(webview, tabId) {
+            // F5 Fix: Capturar F5 dentro do webview
+            webview.addEventListener('before-input-event', (e, input) => {
+                // Verificar 'input.key' e 'input.type' corretamente (Ignorar case sensitivity e tipos desconhecidos)
+                if (input.key === 'F5' && input.type !== 'keyUp') {
+                    const t = tabs.find(x => x.id === tabId);
+                    if (t && t.webview) t.webview.reload();
+                }
+            });
+
+            webview.addEventListener('dom-ready', () => webview.insertCSS(`input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none !important; }`));
+            webview.addEventListener('ipc-message', (event) => {
+                if (event.channel !== 'scroll-position') return;
+                const t = tabs.find(x => x.id === tabId);
+                if (!t) return;
+                const payload = event.args && event.args[0] ? event.args[0] : {};
+                const x = Number(payload.x) || 0;
+                const y = Number(payload.y) || 0;
+                t.scrollX = x;
+                t.scrollY = y;
+                t.lastScrollUrl = typeof payload.url === 'string' ? payload.url : getTabUrl(t);
+                saveSessionTabs();
+            });
+            webview.addEventListener('will-navigate', (e) => {
+                // PERFIL GEXBOT (Flow/Classic) via query param: gex_profile=flw|cls
+                // Importante: a 'partition' do webview NÃO pode ser alterada após criação.
+                // Então, ao detectar o marcador, reabrimos em uma NOVA aba com a partition correta.
+                try {
+                    const urlStr = String(e.url || '');
+                    const uProf = new URL(urlStr);
+                    const hostProf = String(uProf.hostname || '').toLowerCase();
+                    const gp = String(uProf.searchParams.get('gex_profile') || '').toLowerCase();
+                    const isGex = (hostProf === 'gexbot.com' || hostProf.endsWith('.gexbot.com'));
+                    const isProf = (gp === 'cls' || gp === 'classic' || gp === 'flw' || gp === 'flow');
+                    if (isGex && isProf) {
+                        e.preventDefault();
+                        setTimeout(() => {
+                            try { createNewTab(urlStr); } catch { }
+                            try { closeTab(tabId); } catch { }
+                        }, 0);
+                        return;
+                    }
+                } catch { }
+                const t = tabs.find(x => x.id === tabId);
+                const currentUrl = t ? getTabUrl(t) : '';
+                // Atalhos internos (Flow/Classic) - navegar para sessão correta
+                try {
+                    const u = String(e.url || '');
+                    if (u.startsWith('gexclassic://') || u.startsWith('gexflow://') || u.startsWith('gexbotclassic://') || u.startsWith('gexbotflow://')) {
+                        e.preventDefault();
+                        // Fecha a aba atual (geralmente o New Tab) e abre a correta
+                        setTimeout(() => {
+                            try { if (t) closeTab(tabId); } catch { }
+                            createNewTab(u);
+                        }, 0);
+                        return;
+                    }
+                } catch { }
+                if (!canOpenGexbot(e.url, currentUrl, false)) {
+                    e.preventDefault();
+                    showAuthBlocked('Limite de 2 janelas Gexbot atingido.', true);
+                }
+            });
+            webview.addEventListener('did-start-loading', () => { const t = tabs.find(x => x.id === tabId); if (t) t.el.querySelector('.tab-title').textContent = "Loading..."; });
+            webview.addEventListener('did-stop-loading', () => {
+                injectScripts(webview);
+                const t = tabs.find(x => x.id === tabId);
+                if (t && webview.getTitle()) {
+                    t.title = webview.getTitle();
+                    t.el.querySelector('.tab-title').textContent = t.title;
+                    if (activeTabId === tabId) document.title = t.title;
+                }
+                if (activeTabId === tabId) { updateNavButtons(webview); updateZoomUI(webview); }
+                if (t) applyPendingScroll(t, webview);
+                notifyMainProcess();
+            });
+            webview.addEventListener('page-title-updated', (e) => {
+                const t = tabs.find(x => x.id === tabId);
+                if (t) {
+                    t.title = e.title;
+                    t.el.querySelector('.tab-title').textContent = e.title;
+                    if (activeTabId === tabId) document.title = e.title || "Gex Enterprise Browser";
+                }
+            });
+            webview.addEventListener('did-navigate', (e) => { const t = tabs.find(x => x.id === tabId); if (t) { t.url = e.url; t.lastScrollUrl = e.url; if (!t.pendingScroll) { t.scrollX = 0; t.scrollY = 0; } } if (activeTabId === tabId) updateUrlBar(e.url); notifyMainProcess(); saveSessionTabs(); });
+            webview.addEventListener('did-navigate-in-page', (e) => { const t = tabs.find(x => x.id === tabId); if (t && e.isMainFrame) { t.url = e.url; t.lastScrollUrl = e.url; if (!t.pendingScroll) { t.scrollX = 0; t.scrollY = 0; } } if (activeTabId === tabId) updateUrlBar(e.url); notifyMainProcess(); saveSessionTabs(); });
+            webview.addEventListener('new-window', (e) => {
+                e.preventDefault();
+                const t = tabs.find(x => x.id === tabId);
+                if (!t) return;
+
+                // Se for navegação interna do Gexbot (www <-> app), não abrir nova aba/janela.
+                // Mantém o "vai pro APP e volta pro WWW" no mesmo webview, preservando o partition.
+                try {
+                    const currentUrl = getTabUrl(t) || t.url || '';
+                    if (isGexbotUrl(e.url) && isGexbotUrl(currentUrl)) {
+                        t.url = e.url;
+                        try { t.webview.src = e.url; } catch { }
+                        return;
+                    }
+                } catch { }
+                if (!canOpenGexbot(e.url, null, true)) {
+                    showAuthBlocked('Limite de 2 janelas Gexbot atingido.', true);
+                    return;
+                }
+                createNewTab(e.url);
+            });
+            webview.addEventListener('focus', () => { if (activeTabId !== tabId) switchTab(tabId); });
+        }
+
+        // === DRAG AND DROP PARA REORGANIZAR ABAS ===
+        let draggedTabId = null;
+
+        function handleTabDragStart(e, tabId) {
+            draggedTabId = tabId;
+            const tab = tabs.find(t => t.id === tabId);
+            if (tab) {
+                tab.el.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', tabId);
+            }
+        }
+
+        function handleTabDragEnd(e, tabId) {
+            draggedTabId = null;
+            // Limpar todas as classes de drag
+            tabs.forEach(t => {
+                t.el.classList.remove('dragging', 'drag-over-left', 'drag-over-right');
+            });
+        }
+
+        function handleTabDragOver(e, tabId) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+
+            if (draggedTabId === tabId) return;
+
+            const tab = tabs.find(t => t.id === tabId);
+            if (!tab) return;
+
+            // Determinar se o cursor está na metade esquerda ou direita da aba
+            const rect = tab.el.getBoundingClientRect();
+            const midpoint = rect.left + rect.width / 2;
+
+            // Limpar classes anteriores
+            tab.el.classList.remove('drag-over-left', 'drag-over-right');
+
+            if (e.clientX < midpoint) {
+                tab.el.classList.add('drag-over-left');
+            } else {
+                tab.el.classList.add('drag-over-right');
+            }
+        }
+
+        function handleTabDragLeave(e, tabId) {
+            const tab = tabs.find(t => t.id === tabId);
+            if (tab) {
+                tab.el.classList.remove('drag-over-left', 'drag-over-right');
+            }
+        }
+
+        function handleTabDrop(e, targetTabId) {
+            e.preventDefault();
+
+            if (!draggedTabId || draggedTabId === targetTabId) return;
+
+            const draggedIndex = tabs.findIndex(t => t.id === draggedTabId);
+            const targetIndex = tabs.findIndex(t => t.id === targetTabId);
+
+            if (draggedIndex === -1 || targetIndex === -1) return;
+
+            const targetTab = tabs.find(t => t.id === targetTabId);
+            if (!targetTab) return;
+
+            // Determinar posição de inserção baseado na posição do cursor
+            const rect = targetTab.el.getBoundingClientRect();
+            const midpoint = rect.left + rect.width / 2;
+            let insertIndex = e.clientX < midpoint ? targetIndex : targetIndex + 1;
+
+            // Ajustar índice se estamos movendo para frente
+            if (draggedIndex < insertIndex) insertIndex--;
+
+            // Remover aba da posição atual
+            const [draggedTab] = tabs.splice(draggedIndex, 1);
+
+            // Inserir na nova posição
+            tabs.splice(insertIndex, 0, draggedTab);
+
+            // Reorganizar DOM - remover todas as abas e readicionar na ordem correta
+            tabs.forEach(t => {
+                if (t.el.parentNode) t.el.parentNode.removeChild(t.el);
+            });
+
+            tabs.forEach(t => {
+                tabsContainer.insertBefore(t.el, plusBtn);
+            });
+
+            // Limpar estados de drag
+            tabs.forEach(t => {
+                t.el.classList.remove('dragging', 'drag-over-left', 'drag-over-right');
+            });
+
+            // Atualizar estado e salvar
+            updateSplitLayout();
+            notifyMainProcess();
+            saveSessionTabs();
+
+            console.log('[Tabs] Tab reordered:', draggedTabId, 'to position', insertIndex);
+        }
+
+        function getActiveWebview() { const t = tabs.find(x => x.id === activeTabId); return t ? t.webview : null; }
+        function goBack() { const wv = getActiveWebview(); if (wv && wv.canGoBack()) wv.goBack(); }
+        function goForward() { const wv = getActiveWebview(); if (wv && wv.canGoForward()) wv.goForward(); }
+        function reload() { const wv = getActiveWebview(); if (wv) wv.reload(); }
+        function goHome() { const wv = getActiveWebview(); if (wv) wv.loadURL(getNewTabUrl()); }
+        function handleUrlKey(e) { if (e.key === 'Enter') { const wv = getActiveWebview(); if (!wv) return; let val = urlInput.value.trim(); if (!val.startsWith('http')) { if (val.includes('.') && !val.includes(' ')) val = 'https://' + val; else val = 'https://www.google.com/search?q=' + encodeURIComponent(val); } wv.loadURL(val); urlInput.blur(); } }
+        function updateUrlBar(url) { if (!url || url.includes('newtab.html') || url === 'about:blank') urlInput.value = ''; else urlInput.value = url; }
+        function updateNavButtons(wv) { document.getElementById('btn-back').disabled = !wv.canGoBack(); document.getElementById('btn-forward').disabled = !wv.canGoForward(); }
+        function updateZoomUI(wv, explicitFactor = null) {
+            const label = document.getElementById('zoom-level');
+            if (!label) return;
+
+            if (explicitFactor !== null) {
+                label.textContent = Math.round(explicitFactor * 100) + "%";
+            } else if (wv) {
+                try {
+                    if (typeof wv.getZoomFactor === 'function') {
+                        wv.getZoomFactor().then(f => {
+                            label.textContent = Math.round(f * 100) + "%";
+                        }).catch(() => { });
+                    }
+                } catch (e) { }
+            }
+        }
+        function changeZoom(dir) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isAux = urlParams.get('isAux') === '1';
+
+            if (isAux) {
+                // Em janelas auxiliares, aplica o zoom em TODAS as abas/webviews
+                let newFactor = 1.0;
+                tabs.forEach(t => {
+                    if (t.webview) {
+                        let i = t.zoomIndex + dir;
+                        if (i < 0) i = 0;
+                        if (i >= ZOOM_LEVELS.length) i = ZOOM_LEVELS.length - 1;
+                        t.zoomIndex = i;
+                        newFactor = ZOOM_LEVELS[i];
+                        try { t.webview.send('set-zoom', newFactor); } catch (e) { }
+                    }
+                });
+                // Atualiza UI diretamente com o novo fator
+                updateZoomUI(null, newFactor);
+            } else {
+                // Comportamento padrão: apenas aba ativa
+                const t = tabs.find(t => t.id === activeTabId);
+                if (t && t.webview) {
+                    let i = t.zoomIndex + dir;
+                    if (i < 0) i = 0;
+                    if (i >= ZOOM_LEVELS.length) i = ZOOM_LEVELS.length - 1;
+                    t.zoomIndex = i;
+                    const newFactor = ZOOM_LEVELS[i];
+                    try { t.webview.send('set-zoom', newFactor); } catch (e) { }
+                    updateZoomUI(t.webview, newFactor);
+                }
+            }
+        }
+        function resetZoom() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isAux = urlParams.get('isAux') === '1';
+
+            if (isAux) {
+                tabs.forEach(t => {
+                    if (t.webview) {
+                        t.zoomIndex = 7; // Index of 1.0
+                        try { t.webview.send('set-zoom', 1.0); } catch (e) { }
+                    }
+                });
+                updateZoomUI(null, 1.0);
+            } else {
+                const t = tabs.find(t => t.id === activeTabId);
+                if (t) {
+                    t.zoomIndex = 7;
+                    try { t.webview.send('set-zoom', 1.0); } catch (e) { }
+                    updateZoomUI(t.webview, 1.0);
+                }
+            }
+        }
+
+        async function injectScripts(webview) {
+            if (!autoLoginScript || !webview) return;
+            let url = '';
+            try { if (webview.getURL) url = webview.getURL(); else url = webview.src || ''; } catch (e) { }
+
+            // Define perfil do Gexbot para o autologin (flow/classic)
+            let profile = '';
+            try {
+                const t = tabs.find(x => x.webview === webview);
+                if (t && (t.gexProfile === 'classic' || t.gexProfile === 'flow')) profile = t.gexProfile;
+            } catch { }
+            let hint = null;
+            try { if (window.api && url) hint = await window.api.checkLoginCookies(url); } catch (e) { }
+            const cfg = remoteConfig ? `window.__GEX_CONFIG = ${JSON.stringify(remoteConfig)}; window.__GEX_CONFIG_READY = true;` : '';
+            const cfg2 = hint ? `window.__GEX_COOKIES_HINT = ${JSON.stringify(hint)};` : '';
+            const cfgProfile = profile ? `window.__GEX_GEXBOT_PROFILE = ${JSON.stringify(profile)}; try{ localStorage.setItem('gexbot_profile', ${JSON.stringify(profile)}); }catch(e){};` : '';
+            webview.executeJavaScript(`(function(){ if(window.__GEX_INJECTED && window.__GEX_CONFIG_READY) return; window.__GEX_INJECTED=true; ${cfg} ${cfg2} ${cfgProfile} ${autoLoginScript} })();`).catch(() => { });
+        }
+
+        function showAuthBlocked(message, closeActive) {
+            let overlay = document.getElementById('auth-blocked-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'auth-blocked-overlay';
+                const box = document.createElement('div');
+                box.id = 'auth-blocked-box';
+                const msg = document.createElement('div');
+                msg.id = 'auth-blocked-message';
+                const actions = document.createElement('div');
+                actions.id = 'auth-blocked-actions';
+                const ok = document.createElement('button');
+                ok.id = 'auth-blocked-ok';
+                ok.textContent = 'OK';
+                actions.appendChild(ok);
+                box.appendChild(msg);
+                box.appendChild(actions);
+                overlay.appendChild(box);
+                document.body.appendChild(overlay);
+            }
+            const msg = document.getElementById('auth-blocked-message');
+            if (msg) msg.textContent = message || 'Access blocked due to multiple connections.';
+            const ok = document.getElementById('auth-blocked-ok');
+            if (ok) {
+                ok.onclick = () => {
+                    overlay.style.display = 'none';
+                    if (closeActive) {
+                        const targetId = activeTabId || (tabs[0] ? tabs[0].id : null);
+                        if (targetId) closeTab(targetId);
+                    }
+                };
+            }
+            overlay.style.display = 'flex';
+        }
+
+        // === INIT ===
+        async function init() {
+            if (window.__GEX_INIT_DONE) return;
+            window.__GEX_INIT_DONE = true;
+
+            window.addEventListener('click', (e) => {
+                if (!e.target.closest('#btn-layout') && !e.target.closest('#layout-modal')) layoutModal.style.display = 'none';
+            });
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'F5') {
+                    e.preventDefault();
+                    reload();
+                }
+            });
+            if (window.api && window.api.onAuthBlocked) {
+                window.api.onAuthBlocked((payload) => {
+                    const msg = payload && payload.message ? payload.message : 'Access blocked due to multiple connections.';
+                    showAuthBlocked(msg);
+                });
+            }
+            if (window.api && window.api.onGexbotCount) {
+                window.api.onGexbotCount((payload) => {
+                    if (payload && typeof payload.count === 'number') gexbotCount = payload.count;
+                });
+            }
+            if (window.api && window.api.getGexbotCount) {
+                try {
+                    const payload = await window.api.getGexbotCount();
+                    if (payload && typeof payload.count === 'number') gexbotCount = payload.count;
+                } catch { }
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const restore = params.get('restore');
+            const restorationId = params.get('restorationId');
+            const initUrl = params.get('initialUrl');
+            const layoutMode = params.get('layout');
+            const splitParam = params.get('split');
+
+            let urlsToRestore = [];
+
+            // 1. Tentar recuperar via IPC (Prioridade máxima para evitar limite de URL)
+            if (restorationId && window.api && window.api.getRestorationData) {
+                try {
+                    const data = await window.api.getRestorationData(restorationId);
+                    if (Array.isArray(data) && data.length > 0) {
+                        urlsToRestore = data;
+                        console.log('Restaurado via IPC:', urlsToRestore.length, 'abas');
+                    }
+                } catch (e) { console.error('Error restoring via IPC:', e); }
+            }
+
+            // 2. Fallback para parâmetro URL antigo
+            if (urlsToRestore.length === 0 && restore) {
+                try {
+                    urlsToRestore = JSON.parse(decodeURIComponent(restore));
+                } catch (e) { console.error('Error restoring via URL:', e); }
+            }
+
+            // CORREÇÃO: Limpeza de abas ao carregar
+            if (urlsToRestore.length > 0) {
+
+                try {
+                    const allowNewTab = !!splitParam || (layoutMode && layoutMode !== 'single');
+                    let urls = urlsToRestore.map(u => normalizeSessionEntry(u) || (typeof u === 'string' ? { url: u } : null)).filter(Boolean);
+                    urls = urls.filter(entry => {
+                        const u = entry.url;
+                        if (u === undefined || u === null || typeof u !== 'string') return false;
+                        const lower = u.toLowerCase().trim();
+                        const isFile = lower.startsWith('file://');
+
+                        // CORREÇÃO: Permitir abas vazias ou about:blank SEMPRE
+                        if (lower === '' || lower.includes('chrome://')) {
+                            if (lower === '') return false;
+                            return false;
+                        }
+
+                        // REMOVIDO: Filtro de about:blank removido
+                        if (lower === 'about:blank') return false;
+
+                        // REMOVIDO: Filtro de newtab removido
+                        // if (!allowNewTab && lower.includes('newtab')) return false;
+
+                        if (isFile && lower.includes('/browser.html')) return false;
+                        return true;
+                    });
+
+
+                    if (urls.length > 0) {
+                        for (let i = 0; i < urls.length; i++) {
+                            const entry = urls[i];
+                            createNewTab(normalizeGexbotUrl(entry.url), entry);
+                        }
+
+                        try {
+                            const snapshot = tabs.map(t => (t.webview && t.webview.src) ? t.webview.src : (t.url || ''));
+                            if (window.api && window.api.updateWindowState) window.api.updateWindowState({ tabs: snapshot, layoutMode: currentLayoutMode, splitState: computeSplitState(), source: 'restore' });
+                        } catch { }
+                        setTimeout(() => {
+                            if (tabs.length < urls.length) {
+                                for (let i = tabs.length; i < urls.length; i++) createNewTab(urls[i].url, urls[i]);
+                            }
+                            notifyMainProcess();
+                        }, 200);
+                    } else {
+
+                        if (tabs.length === 0) createNewTab(getNewTabUrl());
+                    }
+                } catch (e) { if (tabs.length === 0) createNewTab(getNewTabUrl()); }
+            } else if (initUrl) {
+
+                createNewTab(initUrl);
+            } else {
+                const sessionTabs = loadSessionTabs();
+
+                if (sessionTabs.length > 0) {
+                    sessionTabs.forEach(entry => {
+                        createNewTab(normalizeGexbotUrl(entry.url), entry);
+                    });
+                } else {
+
+                    if (tabs.length === 0) createNewTab(getNewTabUrl());
+                }
+            }
+            const resolveDesiredCount = (mode) => {
+                if (mode === 'split-row-4') return 4;
+                if (mode === 'split-row-3') return 3;
+                if (mode === 'split-row') return 2;
+                return 0; // CORREÇÃO: Para modo single, não exigir abas adicionais
+            };
+            let desiredCount = 0;
+
+            // Apply layout mode if passed
+            if (layoutMode && layoutMode !== 'single') {
+                currentLayoutMode = layoutMode;
+                isSplitLayout = true;
+                if (btnLayout) btnLayout.classList.add('active');
+                desiredCount = resolveDesiredCount(layoutMode);
+            }
+
+            // Apply split state if passed
+            if (splitParam) {
+                try {
+                    const splitState = JSON.parse(decodeURIComponent(splitParam));
+                    if (splitState && splitState.mode) {
+                        currentLayoutMode = splitState.mode;
+                        isSplitLayout = true;
+                        if (btnLayout) btnLayout.classList.add('active');
+                        desiredCount = resolveDesiredCount(currentLayoutMode);
+                    }
+                } catch { }
+            }
+
+            // Ensure we have enough tabs for the layout
+            if (desiredCount > tabs.length) {
+                const diff = desiredCount - tabs.length;
+                for (let i = 0; i < diff; i++) createNewTab(getNewTabUrl());
+            }
+
+            // Mark tabs as in-split
+            if (isSplitLayout) {
+                for (let i = 0; i < desiredCount; i++) {
+                    if (tabs[i]) tabs[i].isInSplit = true;
+                }
+                applySplitContainerClass();
+                updateSplitLayout();
+            }
+
+            injectScripts(null); // Try global injection check
+
+            // Check remote config again
+            if (window.api && window.api.getRemoteConfig) {
+                window.api.getRemoteConfig().then(cfg => {
+                    if (cfg) {
+                        remoteConfig = cfg;
+                        tabs.forEach(t => injectScripts(t.webview));
+                    }
+                });
+            }
+        }
+
+        function organizeWindows() {
+            if (window.api && window.api.organizeWindows) {
+                window.api.organizeWindows();
+            }
+        }
+
+        if (window.api) {
+            Promise.all([window.api.getAutoLoginScript(), window.api.getRemoteConfig()])
+                .then(([s, c]) => {
+                    autoLoginScript = s; remoteConfig = c;
+                    autoLoginScript += `
+                    setTimeout(() => {
+                        var GEX_SESSION_TTL=43200000; function gexHasSession(k){try{var t=parseInt(localStorage.getItem(k)||'0',10);return (Date.now()-t)<GEX_SESSION_TTL;}catch(e){return false}} function gexMarkSession(k){try{localStorage.setItem(k,String(Date.now()));}catch(e){}}
+                        try{var __h=window.__GEX_COOKIES_HINT; if(__h&&__h.has){ var href=(location.href||'').toLowerCase(); var looksLogin=/login|signin|auth/i.test(href)||document.querySelector('input[type="password"],input[name="password"]'); if(!looksLogin) return; }}catch(e){}
+                        if(location.href.includes('gammagex')||location.href.includes('radiant')||location.href.includes('gammalines')){
+                            const checkLogin = setInterval(() => {
+                                const userField = document.getElementById('login-email'); 
+                                const passField = document.getElementById('login-password');
+                                const btn = document.getElementById('loginButton') || document.querySelector('button[type="submit"]');
+                                if (userField && passField) {
+                                    if (document.getElementById('loginModal') && getComputedStyle(document.getElementById('loginModal')).display === 'none') { clearInterval(checkLogin); return; }
+                                    clearInterval(checkLogin);
+                                    const conf = (window.__GEX_CONFIG || {}).credentials || window.__GEX_CONFIG || {};
+                                    const creds = conf['gammagex'] || conf['gexbot'];
+                                    if (creds) {
+                                        let u = creds.user, p = creds.pass;
+                                        if (!u && creds.email_enc && typeof formatText === 'function') { try { u = formatText(creds.email_enc); p = formatText(creds.pass_enc); } catch(e){} }
+                                        if (u && p) { 
+                                            userField.value = u; userField.dispatchEvent(new Event('input', {bubbles:true})); 
+                                            passField.value = p; passField.dispatchEvent(new Event('input', {bubbles:true})); 
+                                            if(btn) setTimeout(()=>btn.click(),1000); 
+                                        }
+                                    }
+                                }
+                            }, 1500); setTimeout(() => clearInterval(checkLogin), 30000);
+                        }
+                        if(location.href.includes('menthorq.com') && location.href.includes('login')){
+                            if(!gexHasSession('__gex_session_menthorq')){
+                            const checkLoginMQ = setInterval(() => {
+                                const u = document.querySelector('input[type="email"]') || document.querySelector('input[name="email"]');
+                                const p = document.querySelector('input[type="password"]') || document.querySelector('input[name="password"]');
+                                const b = document.querySelector('button[type="submit"]') || document.querySelector('button');
+                                
+                                if (u && p) {
+                                    clearInterval(checkLoginMQ);
+                                    const conf = (window.__GEX_CONFIG || {}).credentials || window.__GEX_CONFIG || {};
+                                    const creds = conf['menthorq'];
+                                    if (creds) {
+                                        let user = creds.user, pass = creds.pass;
+                                        if (!user && creds.email_enc && typeof formatText === 'function') { try { user = formatText(creds.email_enc); pass = formatText(creds.pass_enc); } catch(e){} }
+                                        
+                                        if (user && pass) {
+                                            u.value = user; u.dispatchEvent(new Event('input', {bubbles:true}));
+                                            p.value = pass; p.dispatchEvent(new Event('input', {bubbles:true}));
+                                            
+                                            // Tenta encontrar o checkbox "Lembrar-me" de várias formas
+                                            var remember = document.querySelector('#rememberme, #remember_me, input[type="checkbox"][name*="remember" i], input[type="checkbox"][id*="remember" i]');
+                                            if (!remember) {
+                                                // Procura por labels que contenham texto "Lembrar" ou "Remember"
+                                                var labels = Array.from(document.querySelectorAll('label'));
+                                                var lbl = labels.find(function(l){ return /remember|lembrar/i.test(l.textContent||''); });
+                                                if (lbl) {
+                                                    // Tenta achar o input DENTRO do label ou associado pelo ID
+                                                    remember = lbl.querySelector('input[type="checkbox"]');
+                                                    if (!remember && lbl.htmlFor) {
+                                                        remember = document.getElementById(lbl.htmlFor);
+                                                    }
+                                                }
+                                            }
+
+                                            if (remember) { 
+                                                if (!remember.checked) { 
+                                                    try { remember.click(); } catch(e) { remember.checked = true; } 
+                                                }
+                                                // Força eventos para garantir que o estado seja capturado
+                                                try { remember.dispatchEvent(new Event('input', {bubbles:true})); } catch(e){}
+                                                try { remember.dispatchEvent(new Event('change', {bubbles:true})); } catch(e){}
+                                            } else {
+                                                // Fallback: tenta clicar em qualquer checkbox próximo ao botão de login se não achou nada específico
+                                                try {
+                                                    const allChecks = document.querySelectorAll('input[type="checkbox"]');
+                                                    if (allChecks.length === 1) { // Se só tem um checkbox na tela de login, provavelmente é o remember
+                                                        if (!allChecks[0].checked) allChecks[0].click();
+                                                    }
+                                                } catch(e) {}
+                                            }
+
+                                            gexMarkSession('__gex_session_menthorq');
+                                            if (b) setTimeout(() => b.click(), 1500); // Aumentado para 1.5s para dar tempo do checkbox processar
+                                        }
+                                    }
+                                }
+                            }, 1500); setTimeout(() => clearInterval(checkLoginMQ), 30000);
+                            }
+                        }
+                    }, 1000);`;
+                    init();
+                    setTimeout(() => { tabs.forEach(t => injectScripts(t.webview)); }, 1500);
+                    let cfgAttempts = 0;
+                    const cfgTimer = setInterval(() => {
+                        cfgAttempts++;
+                        if (window.api && window.api.getRemoteConfig) {
+                            window.api.getRemoteConfig().then(cfg => {
+                                if (cfg) {
+                                    remoteConfig = cfg;
+                                    tabs.forEach(t => injectScripts(t.webview));
+                                    clearInterval(cfgTimer);
+                                }
+                            });
+                        }
+                        if (cfgAttempts >= 6) clearInterval(cfgTimer);
+                    }, 2000);
+                });
+            if (window.api.onReattach) window.api.onReattach(url => createNewTab(url));
+        } else { init(); }
+    </script>
+    <!-- Update Countdown Modal -->
+    <div id="update-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+        <div style="background: #35363a; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; max-width: 400px; width: 90%;">
+            <h2 style="margin: 0 0 15px 0; color: #8ab4f8;">Atualização Disponível</h2>
+            <p style="margin-bottom: 20px; color: #e8eaed; font-size: 14px;">Uma nova versão (<span id="update-version"></span>) foi detectada.</p>
+            <div style="font-size: 48px; font-weight: bold; color: #fff; margin-bottom: 20px;" id="update-timer">05:00</div>
+            <p style="margin-bottom: 25px; color: #9aa0a6; font-size: 13px;">O aplicativo será encerrado automaticamente para atualização.</p>
+            <button id="btn-update-now" style="background: #8ab4f8; color: #202124; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">ATUALIZAR AGORA</button>
+        </div>
+    </div>
+
+    <script>
+        if (window.api && window.api.onUpdateCountdown) {
+            window.api.onUpdateCountdown((payload) => {
+                const modal = document.getElementById('update-modal');
+                const versionSpan = document.getElementById('update-version');
+                const timerDiv = document.getElementById('update-timer');
+                const btnUpdate = document.getElementById('btn-update-now');
+
+                if (modal) {
+                    versionSpan.textContent = payload.version || 'Nova';
+                    let seconds = payload.seconds || 300;
+                    
+                    const updateDisplay = () => {
+                        const m = Math.floor(seconds / 60);
+                        const s = seconds % 60;
+                        timerDiv.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                    };
+
+                    updateDisplay();
+                    modal.style.display = 'flex';
+
+                    const interval = setInterval(() => {
+                        seconds--;
+                        if (seconds < 0) {
+                            clearInterval(interval);
+                            timerDiv.textContent = "00:00";
+                        } else {
+                            updateDisplay();
+                        }
+                    }, 1000);
+                    
+                    btnUpdate.onclick = () => {
+                        if (window.api.quitNow) window.api.quitNow();
+                    };
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
